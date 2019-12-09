@@ -15,6 +15,8 @@ trait Parser[Input, Output]{
     new ParserFlatMap[Input, Output, B](this, f)
   def map[B](f: Output => B): Parser[Input, B] = 
     new ParserMap(this, f)
+
+  override def toString(): String = "Parser(...)"
 }
 
 object Parser {
@@ -95,6 +97,7 @@ object Parser {
     p: Parser[Input, Output1],
     f: Output1 => Parser[Input, Output2]
   ) extends Parser[Input, Output2]{
+    override def toString(): String = s"($p) flatMap ..."
     def apply[R](
       st0: State[Input], 
       kf: (State[Input], List[String], String) => Eval[Internal.Result[Input, R]],
@@ -107,6 +110,7 @@ object Parser {
     p: Parser[Input, Output1],
     f: Output1 => Output2
   )extends Parser[Input, Output2]{
+    override def toString(): String = s"($p) map ..."
     def apply[R](
       st0: State[Input], 
       kf: (State[Input], List[String], String) => Eval[Internal.Result[Input, R]],
