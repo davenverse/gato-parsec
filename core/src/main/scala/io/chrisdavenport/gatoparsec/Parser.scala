@@ -1,4 +1,4 @@
-package io.chrisdavenport.genparsec
+package io.chrisdavenport.gatoparsec
 
 import cats._
 import cats.data._
@@ -87,7 +87,7 @@ object Parser {
       def empty[A]: Parser[I,A] = Combinator.err[I, A]("zero")
     }
 
-  private[genparsec] def chainDrop[A](c: Chain[A], i: Int):  Chain[A] = Chain.fromSeq(
+  private[gatoparsec] def chainDrop[A](c: Chain[A], i: Int):  Chain[A] = Chain.fromSeq(
     c.iterator.drop(i).toSeq
   )
 

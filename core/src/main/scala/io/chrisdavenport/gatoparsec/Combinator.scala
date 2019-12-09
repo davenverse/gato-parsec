@@ -1,4 +1,4 @@
-package io.chrisdavenport.genparsec
+package io.chrisdavenport.gatoparsec
 
 import cats._
 import cats.implicits._
@@ -281,7 +281,7 @@ object Combinator {
 
   // Higher Level Combinators
   // Allowed to Use Implicits Based on the above
-  import io.chrisdavenport.genparsec.implicits._
+  import io.chrisdavenport.gatoparsec.implicits._
 
   def filter[Input, A](m: Parser[Input, A])(p: A => Boolean): Parser[Input, A] = 
     m.flatMap{a => 

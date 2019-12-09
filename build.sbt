@@ -7,7 +7,7 @@ val kindProjectorV = "0.11.0"
 val betterMonadicForV = "0.3.1"
 
 // Projects
-lazy val `gen-parsec` = project.in(file("."))
+lazy val `gato-parsec` = project.in(file("."))
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublishPlugin)
   .aggregate(core, site)
@@ -15,7 +15,7 @@ lazy val `gen-parsec` = project.in(file("."))
 lazy val core = project.in(file("core"))
   .settings(commonSettings)
   .settings(
-    name := "gen-parsec"
+    name := "gato-parsec"
   )
 
 lazy val site = project.in(file("site"))
@@ -28,13 +28,13 @@ lazy val site = project.in(file("site"))
   .settings{
     import microsites._
     Seq(
-      micrositeName := "gen-parsec",
-      micrositeDescription := "Parsers for Generic Types",
+      micrositeName := "gato-parsec",
+      micrositeDescription := "Generalized atto-parsec with cats",
       micrositeAuthor := "Christopher Davenport",
       micrositeGithubOwner := "ChristopherDavenport",
-      micrositeGithubRepo := "gen-parsec",
-      micrositeBaseUrl := "/gen-parsec",
-      micrositeDocumentationUrl := "https://www.javadoc.io/doc/io.chrisdavenport/gen-parsec_2.12",
+      micrositeGithubRepo := "gato-parsec",
+      micrositeBaseUrl := "/gato-parsec",
+      micrositeDocumentationUrl := "https://www.javadoc.io/doc/io.chrisdavenport/gato-parsec_2.12",
       micrositeGitterChannelUrl := "ChristopherDavenport/libraries", // Feel Free to Set To Something Else
       micrositeFooterText := None,
       micrositeHighlightTheme := "atom-one-light",
@@ -89,13 +89,13 @@ inThisBuild(List(
     Developer("ChristopherDavenport", "Christopher Davenport", "chris@christopherdavenport.tech", url("https://github.com/ChristopherDavenport"))
   ),
 
-  homepage := Some(url("https://github.com/ChristopherDavenport/gen-parsec")),
+  homepage := Some(url("https://github.com/ChristopherDavenport/gato-parsec")),
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
 
   pomIncludeRepository := { _ => false},
   scalacOptions in (Compile, doc) ++= Seq(
       "-groups",
       "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
-      "-doc-source-url", "https://github.com/ChristopherDavenport/gen-parsec/blob/v" + version.value + "€{FILE_PATH}.scala"
+      "-doc-source-url", "https://github.com/ChristopherDavenport/gato-parsec/blob/v" + version.value + "€{FILE_PATH}.scala"
   )
 ))

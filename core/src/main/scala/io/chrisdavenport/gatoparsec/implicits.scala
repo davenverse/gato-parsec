@@ -1,4 +1,4 @@
-package io.chrisdavenport.genparsec
+package io.chrisdavenport.gatoparsec
 
 object implicits {
   implicit class ParserOps[Input, A](private val p: Parser[Input, A]){

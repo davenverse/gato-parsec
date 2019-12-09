@@ -1,11 +1,11 @@
-package io.chrisdavenport.genparsec
+package io.chrisdavenport.gatoparsec
 
 import cats._
 import cats.data._
 import cats.implicits._
-import io.chrisdavenport.genparsec.ParseResult.Done
-import io.chrisdavenport.genparsec.ParseResult.Fail
-import io.chrisdavenport.genparsec.ParseResult.Partial
+import io.chrisdavenport.gatoparsec.ParseResult.Done
+import io.chrisdavenport.gatoparsec.ParseResult.Fail
+import io.chrisdavenport.gatoparsec.ParseResult.Partial
 
 sealed trait ParseResult[-Input, +Output]{
   
