@@ -1,6 +1,7 @@
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 val catsV = "2.0.0"
+
 val specs2V = "4.8.1"
 
 val kindProjectorV = "0.11.0"
@@ -34,7 +35,7 @@ lazy val site = project.in(file("site"))
       micrositeGithubOwner := "ChristopherDavenport",
       micrositeGithubRepo := "gato-parsec",
       micrositeBaseUrl := "/gato-parsec",
-      micrositeDocumentationUrl := "https://www.javadoc.io/doc/io.chrisdavenport/gato-parsec_2.12",
+      micrositeDocumentationUrl := "https://www.javadoc.io/doc/io.chrisdavenport/gato-parsec_2.13",
       micrositeGitterChannelUrl := "ChristopherDavenport/libraries", // Feel Free to Set To Something Else
       micrositeFooterText := None,
       micrositeHighlightTheme := "atom-one-light",

@@ -2,9 +2,9 @@ package io.chrisdavenport.gatoparsec
 
 import cats._
 import cats.implicits._
-import cats.data.Chain
 import cats.data.NonEmptyList
 import Parser._
+import scala.collection.immutable.Queue
 
 object Combinator {
   /** Parser that consumes no data and produces the specified value. */
@@ -98,33 +98,37 @@ object Combinator {
       )
   }
 
-  def ensureSuspended[Input](n: Int): Parser[Input, Chain[Input]] =
+  def ensureSuspended[Input](n: Int): Parser[Input, Queue[Input]] =
     new EnsureSuspendedParser[Input](n)
-  private class EnsureSuspendedParser[Input](n: Int) extends Parser[Input, Chain[Input]]{
+  private class EnsureSuspendedParser[Input](n: Int) extends Parser[Input, Queue[Input]]{
     override def toString(): String = s"ensureSuspended($n)"
     def apply[R](
       st0: Parser.State[Input],
       kf: (Parser.State[Input], List[String], String) => Eval[Parser.Internal.Result[Input,R]],
-      ks: (Parser.State[Input], Chain[Input]) => Eval[Parser.Internal.Result[Input,R]]
+      ks: (Parser.State[Input], Queue[Input]) => Eval[Parser.Internal.Result[Input,R]]
     ): Eval[Parser.Internal.Result[Input,R]] = 
       if (st0.input.length >= st0.pos.value + n)
-        // Can Do Better - Chain Methods Inadequate
-        Eval.defer(ks(st0, Chain.fromSeq(st0.input.toList.drop(st0.pos.value).take(n))))
+        Eval.defer(ks(st0, st0.input.drop(st0.pos.value).take(n)))
       else 
-        Eval.defer(ensureSuspended(n)(st0, kf, ks))
+        Eval.defer(
+          discardLeft(
+            demandInput[Input],
+            ensureSuspended[Input](n)
+          )(st0,kf,ks)
+        )
   }
 
-  def ensure[Input](n: Int): Parser[Input, Chain[Input]] =
+  def ensure[Input](n: Int): Parser[Input, Queue[Input]] =
     new EnsureParser[Input](n)
-  private class EnsureParser[Input](n: Int) extends Parser[Input, Chain[Input]]{
+  private class EnsureParser[Input](n: Int) extends Parser[Input, Queue[Input]]{
     override def toString(): String = s"ensure($n)"
     def apply[R](
       st0: Parser.State[Input],
       kf: (Parser.State[Input], List[String], String) => Eval[Parser.Internal.Result[Input,R]],
-      ks: (Parser.State[Input], Chain[Input]) => Eval[Parser.Internal.Result[Input,R]]
+      ks: (Parser.State[Input], Queue[Input]) => Eval[Parser.Internal.Result[Input,R]]
     ): Eval[Parser.Internal.Result[Input,R]] = 
       if (st0.input.length >= st0.pos.value + n)
-        Eval.defer(ks(st0, Chain.fromSeq(st0.input.toList.drop(st0.pos.value).take(n))))
+        Eval.defer(ks(st0, st0.input.drop(st0.pos.value).take(n)))
       else
         Eval.defer(ensureSuspended(n)(st0, kf, ks))
   }
@@ -146,16 +150,16 @@ object Combinator {
   /////
 
   /** Parser that produces the remaining input (but does not consume it). */
-  def get[Input]: Parser[Input, Chain[Input]] = 
+  def get[Input]: Parser[Input, Queue[Input]] = 
     new GetParser[Input]
-  private class GetParser[Input] extends Parser[Input, Chain[Input]]{
+  private class GetParser[Input] extends Parser[Input, Queue[Input]]{
     override def toString = "get"
     def apply[R](
       st0: State[Input], 
       kf: (State[Input], List[String], String) => Eval[Internal.Result[Input, R]],
-      ks: (State[Input], Chain[Input]) => Eval[Internal.Result[Input, R]]
+      ks: (State[Input], Queue[Input]) => Eval[Internal.Result[Input, R]]
     ): Eval[Internal.Result[Input, R]] =
-      Eval.defer(ks(st0, Parser.chainDrop(st0.input, st0.pos.value)))
+      Eval.defer(ks(st0, st0.input.drop(st0.pos.value)))
   }
 
   /* Parser that produces the current offset in the input. */
@@ -324,10 +328,15 @@ object Combinator {
   // Allowed to Use Implicits Based on the above
   import io.chrisdavenport.gatoparsec.implicits._
 
-  def take[Input](n: Int): Parser[Input, Chain[Input]] = 
+  def take[Input](n: Int): Parser[Input, Queue[Input]] = 
     ensure[Input](n).flatMap{c => 
       advance(n) ~> ok(c)
     }
+
+  def elem[Input]: Parser[Input, Input] =
+    ensure(1).flatMap(c => 
+      advance(1) ~> ok(c.head)
+    )
 
   def filter[Input, A](m: Parser[Input, A])(p: A => Boolean): Parser[Input, A] = 
     m.flatMap{a => 

@@ -1,9 +1,11 @@
 package io.chrisdavenport.gatoparsec
 
 import cats._
-import cats.data._
+import cats.implicits._
 
-trait Parser[Input, Output]{
+import scala.collection.immutable.Queue
+
+trait Parser[Input, +Output]{
   import Parser._
   def apply[R](
     st0: State[Input], 
@@ -21,31 +23,36 @@ trait Parser[Input, Output]{
 
 object Parser {
 
-  def parse[Input, Output](p: Parser[Input, Output], input: Chain[Input]): ParseResult[Input, Output] = {
+  def parse[F[_]: Foldable, Input, Output](p: Parser[Input, Output], input: F[Input]): ParseResult[Input, Output] = 
+    parseIterable(p, input.toList)
+
+  def parseIterable[Input, Output](p: Parser[Input, Output], input: IterableOnce[Input]): ParseResult[Input, Output] = {
     def kf(a: State[Input], b: List[String], c: String) = Eval.now[Internal.Result[Input, Output]](
-      Internal.Fail(a.copy(input = chainDrop(a.input, a.pos.value)), b, c)
+      Internal.Fail(a.copy(input = a.input.drop(a.pos.value)), b, c)
     )
     def ks(a: State[Input], b: Output) = Eval.now[Internal.Result[Input, Output]](
       Internal.Done(
-        a.copy(input = chainDrop(a.input, a.pos.value)),
+        a.copy(input = a.input.drop(a.pos.value)),
         b
       )
     )
-
-    p(State.apply(input, IsComplete.NotComplete), kf, ks).value.translate
+    p(State.apply(Queue.from(input), IsComplete.NotComplete), kf, ks).value.translate
   }
 
-  def parseOnly[Input, Output](p: Parser[Input, Output], input: Chain[Input]): ParseResult[Input, Output] = {
+  def parseOnly[F[_]: Foldable, Input, Output](p: Parser[Input, Output], input: F[Input]): ParseResult[Input, Output] = 
+    parseOnlyIterable(p, input.toList)
+
+  def parseOnlyIterable[Input, Output](p: Parser[Input, Output], input: IterableOnce[Input]): ParseResult[Input, Output] = {
     def kf(a: State[Input], b: List[String], c: String) = Eval.now[Internal.Result[Input, Output]](
-      Internal.Fail(a.copy(input = chainDrop(a.input, a.pos.value)), b, c)
+      Internal.Fail(a.copy(input = a.input.drop(a.pos.value)), b, c)
     )
     def ks(a: State[Input], b: Output) = Eval.now[Internal.Result[Input, Output]](
       Internal.Done(
-        a.copy(input = chainDrop(a.input, a.pos.value)),
+        a.copy(input = a.input.drop(a.pos.value)),
         b
       )
     )
-    p(State.apply(input, IsComplete.Complete), kf, ks).value.translate
+    p(State.apply(Queue.from(input), IsComplete.Complete), kf, ks).value.translate
   }
 
   sealed trait IsComplete {
@@ -59,9 +66,9 @@ object Parser {
     case object NotComplete extends IsComplete
   }
   final case class Pos(value: Int) extends AnyVal
-  final case class State[Input](input: Chain[Input], pos: Pos, complete: IsComplete)
+  final case class State[Input](input: Queue[Input], pos: Pos, complete: IsComplete)
   object State {
-    def apply[Input](input: Chain[Input], done: IsComplete): State[Input] = 
+    def apply[Input](input: Queue[Input], done: IsComplete): State[Input] = 
       new State(input, Pos(0), done)
   }
   
@@ -75,7 +82,7 @@ object Parser {
     }
     final case class Fail[Input, Output](input: State[Input], stack: List[String], message: String)
       extends Result[Input, Output]
-    final case class Partial[Input, Output](k: Chain[Input] => Eval[Result[Input, Output]])
+    final case class Partial[Input, Output](k: Queue[Input] => Eval[Result[Input, Output]])
       extends Result[Input, Output]
     final case class Done[Input, Output](input: State[Input], result: Output)
       extends Result[Input, Output]
@@ -88,10 +95,6 @@ object Parser {
       def combineK[A](x: Parser[I,A], y: Parser[I,A]): Parser[I,A] = Combinator.orElse(x, y)
       def empty[A]: Parser[I,A] = Combinator.err[I, A]("zero")
     }
-
-  private[gatoparsec] def chainDrop[A](c: Chain[A], i: Int):  Chain[A] = Chain.fromSeq(
-    c.iterator.drop(i).toSeq
-  )
 
   private class ParserFlatMap[Input, Output1, Output2](
     p: Parser[Input, Output1],

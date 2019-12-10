@@ -3,25 +3,26 @@ package io.chrisdavenport.gatoparsec
 import io.chrisdavenport.gatoparsec.implicits._
 import org.specs2._
 import org.specs2.mutable.Specification
-import cats.data.Chain
+import scala.collection.immutable.Queue
+import cats.implicits._
 
 class CombinatorSpec extends Specification with ScalaCheck {
   "Combinator" should {
     "parse ok correctly always" >> prop { (s: String, n: Int) =>
-      Combinator.ok[String](n).parseOnly(Chain.one(s)) match {
+      Combinator.ok[String](n).parseOnly(Queue(s)) match {
         case ParseResult.Done(_, _) => ok
         case _ => ko
       }
     }
     "err should always fail" >> prop {s: String => 
-      Combinator.err[String, String]("oops").parseOnly(Chain.one(s)) match {
+      Combinator.err[String, String]("oops").parseOnly(Queue(s)) match {
         case ParseResult.Fail(_, _, _) => ok
         case _ => ko
       }
     }
 
     "get should always succeed" >> prop { s: String => 
-      Combinator.get[String].parseOnly(Chain.one(s)) match {
+      Combinator.get[String].parseOnly(Queue(s)) match {
         case ParseResult.Done(_, _) => ok
         case _ => ko
       }
@@ -34,7 +35,7 @@ class CombinatorSpec extends Specification with ScalaCheck {
           p <- Combinator.pos
         } yield p
 
-        simpleParser.parseOnly(Chain.fromSeq(l)) match {
+        simpleParser.parseOnly(l) match {
           case ParseResult.Done(_, position) => position must_=== (l.length - 1)
           case _ => ko
         }
@@ -43,11 +44,51 @@ class CombinatorSpec extends Specification with ScalaCheck {
 
     "advance should succeed" >> prop { (l: List[String], x: Int) => 
       (x >= 0) ==> {
-        Combinator.advance[String](x).parseOnly(Chain.fromSeq(l)) match {
+        Combinator.advance[String](x).parseOnly(l) match {
           case ParseResult.Done(_, ()) => ok
           case _ => ko
         }
       }
+    }
+
+    "elem full match" in {
+      val c = Combinator.elem[Char]
+      val p = (c, c, c).tupled
+      val expected = ParseResult.Done(Queue.empty[Char], ('a', 'b', 'c'))
+      Parser.parseOnly(p, Queue('a', 'b', 'c')) must_==(expected)
+    }
+
+    "elem not enough input" in {
+      val c = Combinator.elem[Char]
+      val expected = ParseResult.Fail(Queue.empty[Char], Nil, "not enough input")
+      Parser.parseOnly(c, Queue.empty) must_==(expected)
+    }
+
+    "take done" in {
+      val p = Combinator.take[Char](3)
+      val expected = ParseResult.Done(Queue('d'), Queue('a', 'b', 'c'))
+      Parser.parseOnly(p, Queue('a', 'b', 'c', 'd')) must_==(expected)
+    }
+
+    "take partial" in {
+      val p = Combinator.take[Char](4)
+      val r1 = Parser.parse(p, Queue('a', 'b'))
+      val r2 = r1.feedMany(Queue('c', 'd', 'e'))
+      r2 must_==(ParseResult.Done(Queue('e'), Queue.from('a' to 'd')))
+    }
+
+    "take fail" in {
+      val p = Combinator.take[Char](3)
+      val expected = ParseResult.Fail(Queue('a', 'b'), Nil, "not enough input")
+      Parser.parseOnly(p, Queue('a', 'b')) must_==(expected)
+    }
+
+    "take orElse" in {
+      val p = Combinator.take[Char](3) <+> 
+        Combinator.take[Char](1)
+      println(p)
+      val expected = ParseResult.Done(Queue('b'), Queue('a'))
+      Parser.parseOnly(p, Queue('a', 'b')) must_==(expected)
     }
     // demandInput
     // ensure
