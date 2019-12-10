@@ -23,11 +23,11 @@ object Parser {
 
   def parse[Input, Output](p: Parser[Input, Output], input: Chain[Input]): ParseResult[Input, Output] = {
     def kf(a: State[Input], b: List[String], c: String) = Eval.now[Internal.Result[Input, Output]](
-      Internal.Fail(a.copy(input = chainDrop(a.input, a.pos.value)), b, c)
+      Internal.Fail(a.copy(input = a.cursor), b, c)
     )
     def ks(a: State[Input], b: Output) = Eval.now[Internal.Result[Input, Output]](
       Internal.Done(
-        a.copy(input = chainDrop(a.input, a.pos.value)),
+        a.copy(input = a.cursor),
         b
       )
     )
@@ -37,11 +37,11 @@ object Parser {
 
   def parseOnly[Input, Output](p: Parser[Input, Output], input: Chain[Input]): ParseResult[Input, Output] = {
     def kf(a: State[Input], b: List[String], c: String) = Eval.now[Internal.Result[Input, Output]](
-      Internal.Fail(a.copy(input = chainDrop(a.input, a.pos.value)), b, c)
+      Internal.Fail(a.copy(input = a.cursor), b, c)
     )
     def ks(a: State[Input], b: Output) = Eval.now[Internal.Result[Input, Output]](
       Internal.Done(
-        a.copy(input = chainDrop(a.input, a.pos.value)),
+        a.copy(input = a.cursor),
         b
       )
     )
@@ -59,10 +59,10 @@ object Parser {
     case object NotComplete extends IsComplete
   }
   final case class Pos(value: Int) extends AnyVal
-  final case class State[Input](input: Chain[Input], pos: Pos, complete: IsComplete)
+  final case class State[Input](input: Chain[Input], cursor: Chain[Input], complete: IsComplete)
   object State {
     def apply[Input](input: Chain[Input], done: IsComplete): State[Input] = 
-      new State(input, Pos(0), done)
+      new State(input, input, done)
   }
   
   object Internal {
