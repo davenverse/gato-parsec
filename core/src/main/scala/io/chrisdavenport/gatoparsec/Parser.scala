@@ -23,10 +23,10 @@ trait Parser[Input, +Output]{
 
 object Parser {
 
-  def parse[F[_]: Foldable, Input, Output](p: Parser[Input, Output], input: F[Input]): ParseResult[Input, Output] = 
-    parseIterable(p, input.toList)
+  def parse[F[_]: Foldable, Input, Output](p: Parser[Input, Output], input: F[Input]): ParseResult[Input, Output] =
+    parseQueue(p, fToQueue(input))
 
-  def parseIterable[Input, Output](p: Parser[Input, Output], input: IterableOnce[Input]): ParseResult[Input, Output] = {
+  def parseQueue[F[_]: Foldable, Input, Output](p: Parser[Input, Output], input: F[Input]): ParseResult[Input, Output] = {
     def kf(a: State[Input], b: List[String], c: String) = Eval.now[Internal.Result[Input, Output]](
       Internal.Fail(a.copy(input = a.input.drop(a.pos.value)), b, c)
     )
@@ -36,13 +36,13 @@ object Parser {
         b
       )
     )
-    p(State.apply(Queue.from(input), IsComplete.NotComplete), kf, ks).value.translate
+    p(State.apply(fToQueue(input), IsComplete.NotComplete), kf, ks).value.translate
   }
 
-  def parseOnly[F[_]: Foldable, Input, Output](p: Parser[Input, Output], input: F[Input]): ParseResult[Input, Output] = 
-    parseOnlyIterable(p, input.toList)
+  def parseOnly[F[_]: Foldable, Input, Output](p: Parser[Input, Output], input: F[Input]): ParseResult[Input, Output] =
+    parseOnlyQueue(p, fToQueue(input))
 
-  def parseOnlyIterable[Input, Output](p: Parser[Input, Output], input: IterableOnce[Input]): ParseResult[Input, Output] = {
+  def parseOnlyQueue[Input, Output](p: Parser[Input, Output], input: Queue[Input]): ParseResult[Input, Output] = {
     def kf(a: State[Input], b: List[String], c: String) = Eval.now[Internal.Result[Input, Output]](
       Internal.Fail(a.copy(input = a.input.drop(a.pos.value)), b, c)
     )
@@ -52,8 +52,10 @@ object Parser {
         b
       )
     )
-    p(State.apply(Queue.from(input), IsComplete.Complete), kf, ks).value.translate
+    p(State.apply(input, IsComplete.Complete), kf, ks).value.translate
   }
+
+  private def fToQueue[F[_]: Foldable, A](fa: F[A]): Queue[A] = Queue(fa.toList:_*)
 
   sealed trait IsComplete {
     def bool: Boolean = this match {

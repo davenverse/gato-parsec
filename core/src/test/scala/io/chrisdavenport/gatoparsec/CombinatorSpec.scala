@@ -74,7 +74,7 @@ class CombinatorSpec extends Specification with ScalaCheck {
       val p = Combinator.take[Char](4)
       val r1 = Parser.parse(p, Queue('a', 'b'))
       val r2 = r1.feedMany(Queue('c', 'd', 'e'))
-      r2 must_==(ParseResult.Done(Queue('e'), Queue.from('a' to 'd')))
+      r2 must_==(ParseResult.Done(Queue('e'), Queue('a' to 'd':_*)))
     }
 
     "take fail" in {
