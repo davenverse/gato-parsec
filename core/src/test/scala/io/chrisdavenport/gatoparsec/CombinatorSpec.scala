@@ -47,9 +47,22 @@ class CombinatorSpec extends Specification with ScalaCheck {
       Parser.parseOnly(p, Chain('a', 'b', 'c', 'd')) must_==(expected)
     }
 
+    "take partial" >> {
+      val p = Combinator.take[Char](4)
+      val r1 = Parser.parse(p, Chain('a', 'b'))
+      val r2 = r1.feedMany(Chain('c', 'd', 'e'))
+      r2 must_==(ParseResult.Done(Chain.one('e'), Chain.fromSeq('a' to 'd')))
+    }
+
     "take fail" >> {
       val p = Combinator.take[Char](3)
       val expected = ParseResult.Fail(Chain.empty[Char], Nil, "not enough input")
+      Parser.parseOnly(p, Chain('a', 'b')) must_==(expected)
+    }
+
+    "take orElse" >> {
+      val p = Combinator.take[Char](3) <+> Combinator.take[Char](1)
+      val expected = ParseResult.Done(Chain.one('b'), Chain.one('a'))
       Parser.parseOnly(p, Chain('a', 'b')) must_==(expected)
     }
 
