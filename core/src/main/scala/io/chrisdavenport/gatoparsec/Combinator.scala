@@ -9,9 +9,15 @@ import Parser._
 object Combinator {
   /** Parser that consumes no data and produces the specified value. */
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-  def ok[Input, Output](a: Output): Parser[Input, Output] =
-    new OkParser[Input, Output](a)
+  def ok[Input]: OkParserPartiallyApplied[Input] =
+    new OkParserPartiallyApplied[Input]
 
+  /** Intermediate Partially Applied Parser with only Input Specified,
+   * apply a value to build your parser
+   **/
+  class OkParserPartiallyApplied[Input]{
+    def apply[Output](a: Output): Parser[Input, Output] = new OkParser[Input, Output](a)
+  }
   private class OkParser[Input, Output](a: Output) extends  Parser[Input, Output]{
     override def toString(): String = s"ok(${a.toString()})"
     def apply[R](
@@ -318,9 +324,14 @@ object Combinator {
   // Allowed to Use Implicits Based on the above
   import io.chrisdavenport.gatoparsec.implicits._
 
+  def take[Input](n: Int): Parser[Input, Chain[Input]] = 
+    ensure[Input](n).flatMap{c => 
+      advance(n) ~> ok(c)
+    }
+
   def filter[Input, A](m: Parser[Input, A])(p: A => Boolean): Parser[Input, A] = 
     m.flatMap{a => 
-      if (p(a)) ok[Input, A](a) else err[Input, A]("filter")
+      if (p(a)) ok[Input](a) else err[Input, A]("filter")
     } named "filter(...)"
   
   def collect[Input, A, B](m: Parser[Input, A], f: PartialFunction[A, B]): Parser[Input, B] = 
@@ -341,7 +352,7 @@ object Combinator {
     cons(p, many(p))
 
   def manyN[Input, A](n: Int, a: Parser[Input, A]): Parser[Input, List[A]] = 
-    (1.to(n)).foldRight(ok[Input, List[A]](List[A]()))((_, p) => cons(a, p).map(_.toList))
+    (1.to(n)).foldRight(ok[Input](List[A]()))((_, p) => cons(a, p).map(_.toList))
       .named("ManyN(" + n.toString + ", " + a.toString + ")")
 
   def manyUntil[Input, A](p: Parser[Input, A], q: Parser[Input, _]): Parser[Input, List[A]] = {
@@ -384,6 +395,6 @@ object Combinator {
     (m.map[Option[A]](Some(_)) | ok(Option.empty[A])) named s"opt($m)"
 
   def count[Input, A](n: Int, p: Parser[Input, A]): Parser[Input, List[A]] =
-    (1 to n).foldRight(ok[Input, List[A]](List[A]()))((_, a) => cons(p, a).map(_.toList))
+    (1 to n).foldRight(ok[Input](List[A]()))((_, a) => cons(p, a).map(_.toList))
   
 }

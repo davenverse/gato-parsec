@@ -83,7 +83,7 @@ object Parser {
 
   implicit def ParserMonad[I]: Alternative[Parser[I, *]] with Monad[Parser[I, *]] = 
     new Alternative[Parser[I, *]] with StackSafeMonad[Parser[I, *]]{
-      def pure[A](x: A): Parser[I,A] = Combinator.ok[I, A](x)
+      def pure[A](x: A): Parser[I,A] = Combinator.ok[I](x)
       def flatMap[A, B](fa: Parser[I,A])(f: A => Parser[I,B]): Parser[I,B] = fa.flatMap(f)
       def combineK[A](x: Parser[I,A], y: Parser[I,A]): Parser[I,A] = Combinator.orElse(x, y)
       def empty[A]: Parser[I,A] = Combinator.err[I, A]("zero")

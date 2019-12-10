@@ -1,5 +1,8 @@
 package io.chrisdavenport.gatoparsec
 
+
+import cats.data.Chain
+
 object implicits {
   implicit class ParserOps[Input, A](private val p: Parser[Input, A]){
     def ~>[B](p2: => Parser[Input, B]): Parser[Input, B] = Combinator.discardLeft(p, p2)
@@ -10,5 +13,8 @@ object implicits {
 
     def filter(f: A => Boolean): Parser[Input, A] = Combinator.filter(p)(f)
     def named(s: String): Parser[Input, A] = Combinator.named(p, s)
+
+    def parseOnly(i: Chain[Input]) = Parser.parseOnly(p, i)
+    def parse(i: Chain[Input]) = Parser.parse(p, i)
   }
 }
