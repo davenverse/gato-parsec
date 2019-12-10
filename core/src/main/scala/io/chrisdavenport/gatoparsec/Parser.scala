@@ -55,7 +55,9 @@ object Parser {
     p(State.apply(input, IsComplete.Complete), kf, ks).value.translate
   }
 
-  private def fToQueue[F[_]: Foldable, A](fa: F[A]): Queue[A] = Queue(fa.toList:_*)
+  private def fToQueue[F[_]: Foldable, A](fa: F[A]): Queue[A] = {
+    fa.foldLeft(Queue.newBuilder[A])((builder, a) => builder.+=(a)).result()
+  }
 
   sealed trait IsComplete {
     def bool: Boolean = this match {
