@@ -10,12 +10,22 @@ val betterMonadicForV = "0.3.1"
 lazy val `gato-parsec` = project.in(file("."))
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublishPlugin)
-  .aggregate(core, site)
+  .aggregate(core, bench, site)
 
 lazy val core = project.in(file("core"))
   .settings(commonSettings)
   .settings(
     name := "gato-parsec"
+  )
+
+lazy val bench = project.in(file("bench"))
+  .disablePlugins(MimaPlugin)
+  .enablePlugins(NoPublishPlugin)
+  .enablePlugins(JmhPlugin)
+  .dependsOn(core)
+  .settings(commonSettings)
+  .settings(
+    name := "gato-parsec-bench"
   )
 
 lazy val site = project.in(file("site"))
