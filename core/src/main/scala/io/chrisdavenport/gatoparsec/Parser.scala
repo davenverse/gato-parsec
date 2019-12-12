@@ -58,7 +58,6 @@ object Parser {
     case object Complete extends IsComplete
     case object NotComplete extends IsComplete
   }
-  final case class Pos(value: Int) extends AnyVal
   final case class State[Input](input: Chain[Input], cursor: Chain[Input], complete: IsComplete)
   object State {
     def apply[Input](input: Chain[Input], done: IsComplete): State[Input] = 
