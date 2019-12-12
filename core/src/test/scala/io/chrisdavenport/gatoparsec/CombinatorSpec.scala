@@ -4,6 +4,7 @@ import io.chrisdavenport.gatoparsec.implicits._
 import org.specs2._
 import org.specs2.mutable.Specification
 import cats.data.Chain
+import cats.implicits._
 
 class CombinatorSpec extends Specification with ScalaCheck {
   "Combinator" should {
@@ -41,6 +42,19 @@ class CombinatorSpec extends Specification with ScalaCheck {
       }
     }
 
+    "elem full match" >> {
+      val c = Combinator.elem[Char]
+      val p = (c, c, c).tupled
+      val expected = ParseResult.Done(Chain.empty[Char], ('a', 'b', 'c'))
+      Parser.parseOnly(p, Chain('a', 'b', 'c')) must_==(expected)
+    }
+
+    "elem not enough input" >> {
+      val c = Combinator.elem[Char]
+      val expected = ParseResult.Fail(Chain.empty[Char], Nil, "not enough input")
+      Parser.parseOnly(c, Chain.empty) must_==(expected)
+    }
+
     "advance should succeed" >> prop { (l: List[String], x: Int) => 
       (x >= 0) ==> {
         Combinator.advance[String](x).parseOnly(Chain.fromSeq(l)) match {
@@ -49,6 +63,32 @@ class CombinatorSpec extends Specification with ScalaCheck {
         }
       }
     }
+
+    "take done" >> {
+      val p = Combinator.take[Char](3)
+      val expected = ParseResult.Done(Chain.one('d'), Chain('a', 'b', 'c'))
+      Parser.parseOnly(p, Chain('a', 'b', 'c', 'd')) must_==(expected)
+    }
+
+    "take partial" >> {
+      val p = Combinator.take[Char](4)
+      val r1 = Parser.parse(p, Chain('a', 'b'))
+      val r2 = r1.feedMany(Chain('c', 'd', 'e'))
+      r2 must_==(ParseResult.Done(Chain.one('e'), Chain.fromSeq('a' to 'd')))
+    }
+
+    "take fail" >> {
+      val p = Combinator.take[Char](3)
+      val expected = ParseResult.Fail(Chain('a', 'b'), Nil, "not enough input")
+      Parser.parseOnly(p, Chain('a', 'b')) must_==(expected)
+    }
+
+    "take orElse" >> {
+      val p = Combinator.take[Char](3) <+> Combinator.take[Char](1)
+      val expected = ParseResult.Done(Chain.one('b'), Chain.one('a'))
+      Parser.parseOnly(p, Chain('a', 'b')) must_==(expected)
+    }
+
     // demandInput
     // ensure
     // wantInput

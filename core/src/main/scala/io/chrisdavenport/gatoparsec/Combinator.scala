@@ -111,7 +111,7 @@ object Combinator {
         // Can Do Better - Chain Methods Inadequate
         Eval.defer(ks(st0, Chain.fromSeq(st0.input.toList.drop(st0.pos.value).take(n))))
       else 
-        Eval.defer(ensureSuspended(n)(st0, kf, ks))
+        Eval.defer(discardLeft(demandInput[Input], ensureSuspended[Input](n))(st0, kf, ks))
   }
 
   def ensure[Input](n: Int): Parser[Input, Chain[Input]] =
@@ -328,6 +328,9 @@ object Combinator {
     ensure[Input](n).flatMap{c => 
       advance(n) ~> ok(c)
     }
+
+  def elem[Input]: Parser[Input, Input] =
+    take[Input](1).map(_.headOption.get)
 
   def filter[Input, A](m: Parser[Input, A])(p: A => Boolean): Parser[Input, A] = 
     m.flatMap{a => 
