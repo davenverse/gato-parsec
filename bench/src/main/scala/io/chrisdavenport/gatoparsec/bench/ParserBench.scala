@@ -16,7 +16,7 @@ class ParserBench {
 
   @Benchmark
   def streamingSmallReadSmallChunks(): Unit = {
-    val data = Iterator.unfold(0)(i => if (i === 10000) None else Some((Chain('a', 'b'), i + 1)))
+    val data = (0 until 10000).map(_ => Chain('a', 'b'))
     val res = data.foldLeft(Parser.parse(many(aOrB), Chain.empty))((parseResult, input) =>
       parseResult.feedMany(input)
     )
@@ -30,7 +30,7 @@ class ParserBench {
   @Benchmark
   def streamingBigReadSmallChunksCount(): Unit = {
     val bigNum = 10000
-    val data = Iterator.unfold(0)(i => if (i === bigNum) None else Some((Chain('a','b'), i + 1)))
+    val data = (0 until bigNum).map(_ => Chain('a', 'b'))
     val p = count(bigNum * 2 - 1, elem[Char].void) ~> elem[Char]
     val res = data.foldLeft(Parser.parse(p, Chain.empty))((parseResult, input) =>
       parseResult.feedMany(input)
@@ -45,7 +45,7 @@ class ParserBench {
   @Benchmark
   def streamingBigReadSmallChunksTake(): Unit = {
     val bigNum = 10000
-    val data = Iterator.unfold(0)(i => if (i === bigNum) None else Some((Chain('a','b'), i + 1)))
+    val data = (0 until bigNum).map(_ => Chain('a', 'b'))
     val p = take[Char](bigNum * 2 - 1).void ~> elem[Char]
     val res = data.foldLeft(Parser.parse(p, Chain.empty))((parseResult, input) =>
       parseResult.feedMany(input)
